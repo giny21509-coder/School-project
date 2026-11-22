@@ -1,0 +1,117 @@
+﻿%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &2973056670199327717
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8797325142649175030}
+  - component: {fileID: 6851474912222729509}
+  - component: {fileID: 275535790134842640}
+  m_Layer: 0
+  m_Name: CameraSystem
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8797325142649175030
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2973056670199327717}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -2.52691, y: 0.83422, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6851474912222729509
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2973056670199327717}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4667ebb72b544374bb29f06591c2fa7f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CameraSystem
+  hasCamera: 1
+  cameraModeOpen: 0
+  toggleCameraKey: 306
+  shootKey: 323
+  flashKey: 102
+  worldCamera: {fileID: 0}
+  wisherLayer:
+    serializedVersion: 2
+    m_Bits: 256
+  aimRadius: 0.35
+  photoCooldown: 0.6
+  normalCamera: {fileID: 0}
+  cameraModeCamera: {fileID: 0}
+  playerController: {fileID: 0}
+  stopPlayerMovementInCameraMode: 1
+  moveCameraToPlayerWhenOpened: 1
+  autoCreateTextSceneCameraModeTest: 1
+  unlockCameraInTextSceneTest: 1
+  testSceneName: Text Scene
+  testCameraModeCenter: {x: 100, y: 0, z: 0}
+  testBackgroundSprite: {fileID: 0}
+  testBackgroundWorldSize: {x: 16, y: 9}
+  testBackgroundColor: {r: 0.2, g: 0.27, b: 0.38, a: 1}
+  allowCameraViewMovement: 1
+  cameraViewMoveSpeed: 4
+  moveCameraViewWithMouse: 0
+  maxMouseViewOffset: {x: 5, y: 3}
+  mouseViewSmoothSpeed: 12
+  useCameraMovementBounds: 0
+  cameraMinPosition: {x: 0, y: 0}
+  cameraMaxPosition: {x: 0, y: 0}
+  cameraModeBackgroundRoot: {fileID: 0}
+  moveBackgroundWithMouse: 1
+  invertBackgroundMouseMove: 1
+  maxBackgroundMouseOffset: {x: 0.8, y: 0.45}
+  backgroundMouseSmoothSpeed: 10
+  cameraViewRoot: {fileID: 0}
+  reticle: {fileID: 0}
+  letCameraUiClicksPassThrough: 1
+  onCameraUnlocked:
+    m_PersistentCalls:
+      m_Calls: []
+  onCameraOpened:
+    m_PersistentCalls:
+      m_Calls: []
+  onCameraClosed:
+    m_PersistentCalls:
+      m_Calls: []
+  onPhotoMissed:
+    m_PersistentCalls:
+      m_Calls: []
+  onFlashUsed:
+    m_PersistentCalls:
+      m_Calls: []
+--- !u!114 &275535790134842640
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2973056670199327717}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f950e26a16d731409de8178bd07b985, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CameraInventoryUnlocker
+  cameraItemId: Camera_01
+  cameraItemName: "\u76F8\u6A5F"
+  checkOnStart: 1
+  keepCheckingUntilUnlocked: 1
