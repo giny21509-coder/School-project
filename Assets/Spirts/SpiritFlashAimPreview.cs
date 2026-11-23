@@ -13,15 +13,15 @@ public sealed class SpiritFlashAimPreview : MonoBehaviour
     [SerializeField] private Color cooldownFill = new Color(0.55f, 0.65f, 0.7f, 0.12f);
     [SerializeField] private bool illuminateSprites = true;
     [SerializeField, Range(0f, 3f)] private float lightIntensity = 1.2f;
-    [SerializeField, Min(8f)] private float reticlePixels = 28f;
+    [SerializeField, Min(8f)] private float reticlePixels = 36f;
 
     private GameObject root;
     private Transform sector;
     private Mesh mesh;
     private MeshRenderer fill;
     private Light2D spotlight;
-    private SpriteRenderer reticle;
-    private Sprite reticleSprite;
+    private Transform reticle;
+    private LineRenderer[] reticleCorners;
     private MaterialPropertyBlock propertyBlock;
     private readonly Vector3[] vertices = new Vector3[ArcSegments + 2];
     private readonly Vector2[] uv = new Vector2[ArcSegments + 2];
@@ -87,15 +87,29 @@ public sealed class SpiritFlashAimPreview : MonoBehaviour
 
         if (reticle != null)
         {
-            reticle.transform.position = new Vector3(aimPosition.x, aimPosition.y, origin.z);
-            float depth = Mathf.Abs(Vector3.Dot(reticle.transform.position - camera.transform.position, camera.transform.forward));
+            reticle.position = new Vector3(aimPosition.x, aimPosition.y, origin.z);
+            reticle.rotation = camera.transform.rotation;
+            float depth = Mathf.Abs(Vector3.Dot(reticle.position - camera.transform.position, camera.transform.forward));
             float viewHeight = camera.orthographic ? camera.orthographicSize * 2f
                 : depth * Mathf.Tan(camera.fieldOfView * Mathf.Deg2Rad * 0.5f) * 2f;
-            float size = viewHeight * reticlePixels / Mathf.Max(1, camera.pixelHeight);
-            reticle.transform.localScale = Vector3.one * (size / reticleSprite.bounds.size.x);
+            float pixelSize = viewHeight / Mathf.Max(1, camera.pixelHeight);
+            float halfSize = pixelSize * reticlePixels * 0.5f;
+            float cornerLength = halfSize * 0.6f;
             bool inRange = Vector2.Distance(origin, aimPosition) <= range;
-            reticle.color = flashing ? Color.white : ready && inRange
-                ? new Color(1f, 0.97f, 0.85f, 0.9f) : new Color(0.6f, 0.7f, 0.75f, 0.5f);
+            Color color = flashing ? Color.white : ready && inRange
+                ? new Color(1f, 0.97f, 0.85f, 1f) : new Color(0.6f, 0.7f, 0.75f, 0.75f);
+            for (int i = 0; i < reticleCorners.Length; i++)
+            {
+                float x = i % 2 == 0 ? -1f : 1f;
+                float y = i < 2 ? -1f : 1f;
+                var corner = new Vector3(x * halfSize, y * halfSize, 0f);
+                var line = reticleCorners[i];
+                line.startColor = line.endColor = color;
+                line.startWidth = line.endWidth = pixelSize * 1.5f;
+                line.SetPosition(0, corner - new Vector3(x * cornerLength, 0f, 0f));
+                line.SetPosition(1, corner);
+                line.SetPosition(2, corner - new Vector3(0f, y * cornerLength, 0f));
+            }
         }
     }
 
@@ -147,20 +161,28 @@ public sealed class SpiritFlashAimPreview : MonoBehaviour
         spotlight.falloffIntensity = 0.8f;
         spotlight.volumetricEnabled = false;
 
-        Texture2D texture = Resources.Load<Texture2D>("InnerWorldCombat/Reticle");
         Material reticleMaterial = Resources.Load<Material>("InnerWorldCombat/Reticle");
-        if (texture != null && reticleMaterial != null)
+        if (reticleMaterial != null)
         {
-            reticleSprite = Sprite.Create(texture, new Rect(0f, 0f, texture.width, texture.height),
-                new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect);
-            var reticleObject = new GameObject("AimReticle");
-            reticleObject.transform.SetParent(root.transform, false);
-            reticle = reticleObject.AddComponent<SpriteRenderer>();
-            reticle.sprite = reticleSprite;
-            reticle.sharedMaterial = reticleMaterial;
+            var reticleObject = new GameObject("Aim focus frame");
+            reticle = reticleObject.transform;
+            reticle.SetParent(root.transform, false);
+            reticleCorners = new LineRenderer[4];
             SortingLayer[] layers = SortingLayer.layers;
-            reticle.sortingLayerID = layers[layers.Length - 1].id;
-            reticle.sortingOrder = 100;
+            int topLayer = layers[layers.Length - 1].id;
+            for (int i = 0; i < reticleCorners.Length; i++)
+            {
+                var cornerObject = new GameObject("Focus corner " + (i + 1));
+                cornerObject.transform.SetParent(reticle, false);
+                var line = cornerObject.AddComponent<LineRenderer>();
+                line.sharedMaterial = reticleMaterial;
+                line.useWorldSpace = false;
+                line.positionCount = 3;
+                line.numCornerVertices = 2;
+                line.sortingLayerID = topLayer;
+                line.sortingOrder = 32000;
+                reticleCorners[i] = line;
+            }
         }
         return true;
     }
@@ -183,6 +205,5 @@ public sealed class SpiritFlashAimPreview : MonoBehaviour
     {
         DestroyOwned(root);
         DestroyOwned(mesh);
-        DestroyOwned(reticleSprite);
     }
 }

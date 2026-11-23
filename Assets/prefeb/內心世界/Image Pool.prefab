@@ -1582,7 +1582,9 @@ MonoBehaviour:
   InitializationMode: 0
   Label: 
   UseMinimumXDistance: 1
-  MinimumXDistance: 1
+  MinimumXDistance: 2.5
+  UseMinimumVisualGap: 1
+  MinimumVisualGap: 0.5
 --- !u!1 &6364129172647597348
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,13 +1,13 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
+using MoreMountains.TopDownEngine;
 
 public class SpiritFollow : MonoBehaviour
 {
     public Transform player;
-    public Transform weaponPoint;
+    [HideInInspector] public Transform weaponPoint;
 
     public Sprite spiritSprite;
-    public Sprite swordSprite;
+    [HideInInspector] public Sprite swordSprite;
 
     public Vector3 followOffset = new Vector3(1.2f, 0.8f, 0f);
     public float followSmoothTime = 0.15f;
@@ -19,26 +19,25 @@ public class SpiritFollow : MonoBehaviour
     public float floatHeight = 0.15f;
     public float floatSpeed = 3f;
 
-    public Vector3 weaponLocalPosition = Vector3.zero;
-    public Vector3 swordLocalRotation = new Vector3(0f, 0f, -45f);
-    public Vector3 swordLocalScale = new Vector3(1f, 1f, 1f);
+    [HideInInspector] public Vector3 weaponLocalPosition = Vector3.zero;
+    [HideInInspector] public Vector3 swordLocalRotation = new Vector3(0f, 0f, -45f);
+    [HideInInspector] public Vector3 swordLocalScale = new Vector3(1f, 1f, 1f);
 
     public Vector3 spiritScale = new Vector3(1f, 1f, 1f);
 
-    private bool isWeaponMode = false;
-    public bool IsWeaponMode => isWeaponMode;
+    public bool IsWeaponMode => false;
     private Vector3 velocity;
     private SpriteRenderer spriteRenderer;
     private bool flashAiming;
     private float flashAimSide = 1f;
     private Vector3 lastAimPlayerPosition;
 
-    public bool IsAtFlashAimPosition => flashAiming && !isWeaponMode && player != null
+    public bool IsAtFlashAimPosition => flashAiming && player != null
         && (transform.position - GetFollowTargetPosition()).sqrMagnitude <= 0.0144f;
 
     public void SetFlashAim(bool active, Vector2 aimWorldPosition)
     {
-        active = active && !isWeaponMode && player != null;
+        active = active && player != null;
         if (active != flashAiming)
         {
             velocity = Vector3.zero;
@@ -73,12 +72,19 @@ public class SpiritFollow : MonoBehaviour
         }
     }
 
-    private void Update()
+    private void OnEnable()
     {
-        if (PressedR())
+        SetBattleModeAnimation(false);
+        if (weaponPoint != null && transform.parent == weaponPoint)
         {
-            ToggleMode();
+            transform.SetParent(null);
+            transform.localRotation = Quaternion.identity;
+            transform.localScale = spiritScale;
         }
+        if (spriteRenderer != null && spiritSprite != null) spriteRenderer.sprite = spiritSprite;
+        foreach (Weapon weapon in GetComponentsInChildren<Weapon>(true)) weapon.enabled = false;
+        foreach (DamageOnTouch damage in GetComponentsInChildren<DamageOnTouch>(true)) damage.enabled = false;
+        foreach (Attack attack in GetComponentsInChildren<Attack>(true)) attack.enabled = false;
     }
 
     private void LateUpdate()
@@ -96,8 +102,6 @@ public class SpiritFollow : MonoBehaviour
 
     private void FollowPlayer(float deltaTime)
     {
-        if (isWeaponMode)
-            return;
         if (player == null)
             return;
         if (deltaTime <= 0f) return;
@@ -117,77 +121,17 @@ public class SpiritFollow : MonoBehaviour
             deltaTime
         );
     }
-    private void ToggleMode()
-    {
-        SetFlashAim(false, Vector2.zero);
-        isWeaponMode = !isWeaponMode;
-        SetBattleModeAnimation(isWeaponMode);
-
-        if (isWeaponMode)
-        {
-            BecomeWeapon();
-        }
-        else
-        {
-            BecomeSpirit();
-        }
-    }
-
     private void SetBattleModeAnimation(bool active)
     {
-        if (spiritAnimator != null)
+        if (spiritAnimator != null && spiritAnimator.runtimeAnimatorController != null)
         {
             spiritAnimator.SetBool(battleModeParameterName, active);
         }
 
-        if (playerAnimator != null)
+        if (playerAnimator != null && playerAnimator.runtimeAnimatorController != null)
         {
             playerAnimator.SetBool(battleModeParameterName, active);
         }
-    }
-
-    private void BecomeWeapon()
-    {
-        if (weaponPoint == null)
-            return;
-
-        transform.SetParent(weaponPoint);
-
-        transform.localPosition = weaponLocalPosition;
-        transform.localRotation = Quaternion.Euler(swordLocalRotation);
-        transform.localScale = swordLocalScale;
-
-        if (spriteRenderer != null && swordSprite != null)
-        {
-            spriteRenderer.sprite = swordSprite;
-        }
-    }
-
-    private void BecomeSpirit()
-    {
-        transform.SetParent(null);
-
-        transform.localScale = spiritScale;
-
-        if (spriteRenderer != null && spiritSprite != null)
-        {
-            spriteRenderer.sprite = spiritSprite;
-        }
-
-        velocity = Vector3.zero;
-    }
-    private bool PressedR()
-    {
-#if ENABLE_INPUT_SYSTEM
-        if (Keyboard.current != null)
-            return Keyboard.current.rKey.wasPressedThisFrame;
-#endif
-
-#if ENABLE_LEGACY_INPUT_MANAGER
-        return Input.GetKeyDown(KeyCode.R);
-#else
-        return false;
-#endif
     }
 
     private void OnDisable()

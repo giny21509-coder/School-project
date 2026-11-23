@@ -46,17 +46,22 @@ public class Chatacher : MonoBehaviour
 
     public void TakeDamage(Attack attacker)
     {
+        if (attacker != null) TakeDamage(attacker.damage, attacker.transform);
+    }
 
+    public void TakeDamage(float damage, Transform attacker)
+    {
         InnerWorldMistShield shield = GetComponentInParent<InnerWorldMistShield>();
-        if (isDead || invulnerable || (shield != null && shield.IsShielded))
+        if (!isActiveAndEnabled || isDead || invulnerable || damage <= 0f
+            || (shield != null && shield.IsShielded))
             return;
         // Debug.Log(attacker.damage);
-        if (currenHealthl - attacker.damage > 0)
+        if (currenHealthl - damage > 0)
         {
-            currenHealthl -=  attacker.damage;
+            currenHealthl -= damage;
             TriggerInvulnvulnerable();
 
-            OnTakrDamage?.Invoke(attacker.transform);
+            OnTakrDamage?.Invoke(attacker);
         }
         else
         {

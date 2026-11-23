@@ -23,6 +23,7 @@ public class Attack : MonoBehaviour
 
     private void TryHit(Collider2D other)
     {
+        if (!isActiveAndEnabled) return;
         Chatacher chatacher = other.GetComponent<Chatacher>();
 
         // 停用的舊血量元件不應接收傷害；TopDown 傷害由 DamageOnTouch 處理。

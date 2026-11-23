@@ -3017,6 +3017,7 @@ GameObject:
   - component: {fileID: 957414620}
   - component: {fileID: 957414619}
   - component: {fileID: 957414618}
+  - component: {fileID: 957414622}
   m_Layer: 0
   m_Name: Cat Camera
   m_TagString: Untagged
@@ -3142,6 +3143,20 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &957414622
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 957414617}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48f6ab2f56f861a4b9e60533b251d57a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::KitchenCatCameraMove
+  explorationCamera: {fileID: 7200000000000001013}
+  moveDuration: 1
 --- !u!1 &1025122862
 GameObject:
   m_ObjectHideFlags: 0
@@ -3968,6 +3983,16 @@ PrefabInstance:
         type: 3}
       propertyPath: testBackgroundWorldSize.y
       value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 6851474912222729509, guid: 9a1dbb467b69c364bb5f1e97a468cb5e,
+        type: 3}
+      propertyPath: unlockCameraInTextSceneTest
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6851474912222729509, guid: 9a1dbb467b69c364bb5f1e97a468cb5e,
+        type: 3}
+      propertyPath: autoCreateTextSceneCameraModeTest
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8797325142649175030, guid: 9a1dbb467b69c364bb5f1e97a468cb5e,
         type: 3}
@@ -6023,18 +6048,23 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 694923756513268951, guid: 5531fed2c06bd9c4e8c03c3576dca05e,
         type: 3}
+      propertyPath: Lens.OrthographicSize
+      value: 7.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 694923756513268951, guid: 5531fed2c06bd9c4e8c03c3576dca05e,
+        type: 3}
       propertyPath: Target.TrackingTarget
       value: 
       objectReference: {fileID: 7200000000000001002}
     - target: {fileID: 2106978298141067267, guid: 5531fed2c06bd9c4e8c03c3576dca05e,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: -5.410003
+      value: -5.4100046
       objectReference: {fileID: 0}
     - target: {fileID: 2106978298141067267, guid: 5531fed2c06bd9c4e8c03c3576dca05e,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.7699999
+      value: 1.3100002
       objectReference: {fileID: 0}
     - target: {fileID: 2106978298141067267, guid: 5531fed2c06bd9c4e8c03c3576dca05e,
         type: 3}
@@ -6252,17 +6282,17 @@ PrefabInstance:
     - target: {fileID: 3201394893006832248, guid: 6a790ba04f57ad54ca47679a3101cfff,
         type: 3}
       propertyPath: m_TagString
-      value: Player
+      value: MainCamera
       objectReference: {fileID: 0}
     - target: {fileID: 6651107933620957578, guid: 6a790ba04f57ad54ca47679a3101cfff,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: -5.410003
+      value: -5.358359
       objectReference: {fileID: 0}
     - target: {fileID: 6651107933620957578, guid: 6a790ba04f57ad54ca47679a3101cfff,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.7699999
+      value: -0.47291994
       objectReference: {fileID: 0}
     - target: {fileID: 6651107933620957578, guid: 6a790ba04f57ad54ca47679a3101cfff,
         type: 3}
@@ -6322,7 +6352,7 @@ PrefabInstance:
     - target: {fileID: 8319041695650652044, guid: 6a790ba04f57ad54ca47679a3101cfff,
         type: 3}
       propertyPath: orthographic size
-      value: 5.625
+      value: 7.5
       objectReference: {fileID: 0}
     - target: {fileID: 8319041695650652044, guid: 6a790ba04f57ad54ca47679a3101cfff,
         type: 3}
@@ -6332,17 +6362,27 @@ PrefabInstance:
     - target: {fileID: 8319041695650652044, guid: 6a790ba04f57ad54ca47679a3101cfff,
         type: 3}
       propertyPath: m_BackGroundColor.b
-      value: 0.6695692
+      value: 0.085
       objectReference: {fileID: 0}
     - target: {fileID: 8319041695650652044, guid: 6a790ba04f57ad54ca47679a3101cfff,
         type: 3}
       propertyPath: m_BackGroundColor.g
-      value: 0.6695692
+      value: 0.105
       objectReference: {fileID: 0}
     - target: {fileID: 8319041695650652044, guid: 6a790ba04f57ad54ca47679a3101cfff,
         type: 3}
       propertyPath: m_BackGroundColor.r
-      value: 0.9169811
+      value: 0.12
+      objectReference: {fileID: 0}
+    - target: {fileID: 8319041695650652044, guid: 6a790ba04f57ad54ca47679a3101cfff,
+        type: 3}
+      propertyPath: m_NormalizedViewPortRect.y
+      value: 0.055555556
+      objectReference: {fileID: 0}
+    - target: {fileID: 8319041695650652044, guid: 6a790ba04f57ad54ca47679a3101cfff,
+        type: 3}
+      propertyPath: m_NormalizedViewPortRect.height
+      value: 0.8888889
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -6506,9 +6546,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.RenderPipelines.Universal.2D.Runtime::UnityEngine.Rendering.Universal.PixelPerfectCamera
   m_ComponentVersion: 1
   m_AssetsPPU: 16
-  m_RefResolutionX: 320
-  m_RefResolutionY: 180
-  m_CropFrame: 0
+  m_RefResolutionX: 426
+  m_RefResolutionY: 240
+  m_CropFrame: 2
   m_GridSnapping: 0
   m_FilterMode: 0
   m_UpscaleRT: 0

@@ -1,6 +1,5 @@
 using Fungus;
 using UnityEngine;
-using System.Collections;
 using MoreMountains.TopDownEngine;
 //using UnityEngine.InputSystem;
 
@@ -27,14 +26,6 @@ public class PlayerController : MonoBehaviour
     private float nextFootstepTime;
     private int lastFootstepClipIndex = -1;
 
-    [Header("Swing Audio")]
-    public bool enableSwingAudio = true;
-    public AudioClip swingClip;
-    [Range(0f, 1f)] public float swingVolume = 0.7f;
-    public UnityEngine.Audio.AudioMixerGroup swingMixerGroup;
-
-    private AudioSource swingSource;
-
     public bool canMove = true;
     [Header("人物移動界線設置")]
     public float minY, maxY;
@@ -49,70 +40,37 @@ public class PlayerController : MonoBehaviour
     public float minScale = 0.7f; 
     public float maxScale = 1.3f;
 
-    [Header("攻擊設定")]
-    public Animator weaponAnimator;
+    [Header("Camera Companion")]
     public SpiritFollow spiritFollow;
-    public GameObject attackArea;
-    public string attackTriggerName = "MeleeAttackStart";
-    public string[] comboAttackTriggerNames = { "MeleeAttack1", "MeleeAttack2", "MeleeAttack3" };
-    public int attackMouseButton = 1;
-    public bool triggerWeaponAnimatorAttacks = false;
-    public float attackCooldown = 0.4f;
-    public float attackAreaActiveTime = 0.2f;
-    public float comboResetTime = 0.8f;
+    [HideInInspector] public Animator weaponAnimator;
+    [HideInInspector] public GameObject attackArea;
 
-    [Header("Second Hit Knockback")]
-    [Min(0f)] public float secondHitKnockbackForce = 30f;
-    [Min(0f)] public float secondHitKnockbackDuration = 0.2f;
-    [Min(0f)] public float attackHitInvincibilityDuration = 0.25f;
-
-    [Header("Third Hit Heavy Slash")]
-    [Min(1f)] public float thirdHitDamageMultiplier = 1.5f;
-    [Min(0f)] public float thirdHitKnockbackForce = 8f;
-    [Min(0f)] public float thirdHitKnockbackDuration = 0.12f;
-
-    private float lastAttackTime = -999f;
-    private float lastComboInputTime = -999f;
-    private int comboStep;
-    private Coroutine attackAreaCoroutine;
-    private DamageOnTouch[] attackDamageAreas;
-    private float[] baseMinDamage;
-    private float[] baseMaxDamage;
-
-
-    void Start()
+    private void Awake()
     {
         anim= GetComponent<Animator>();
         rb = GetComponent<Rigidbody2D>();
-        if (attackArea != null)
-        {
-            attackArea.SetActive(false);
-            attackDamageAreas = attackArea.GetComponentsInChildren<DamageOnTouch>(true);
-            baseMinDamage = new float[attackDamageAreas.Length];
-            baseMaxDamage = new float[attackDamageAreas.Length];
-            for (int i = 0; i < attackDamageAreas.Length; i++)
-            {
-                DamageOnTouch damageArea = attackDamageAreas[i];
-                baseMinDamage[i] = damageArea.MinDamageCaused;
-                baseMaxDamage[i] = damageArea.MaxDamageCaused;
-                if (damageArea.HitDamageableEvent == null)
-                {
-                    damageArea.HitDamageableEvent = new UnityEngine.Events.UnityEvent<Health>();
-                }
-                damageArea.HitDamageableEvent.AddListener(OnAttackHitDamageable);
-            }
-        }
     }
 
-    private void OnDestroy()
+    private void OnEnable()
     {
-        if (attackDamageAreas == null) return;
-        foreach (DamageOnTouch damageArea in attackDamageAreas)
+        DisableWeaponCombat();
+    }
+
+    private void DisableWeaponCombat()
+    {
+        if (attackArea != null && attackArea != gameObject) attackArea.SetActive(false);
+        foreach (CharacterHandleWeapon handler in GetComponentsInChildren<CharacterHandleWeapon>(true))
         {
-            if (damageArea != null)
-            {
-                damageArea.HitDamageableEvent?.RemoveListener(OnAttackHitDamageable);
-            }
+            handler.AbilityPermitted = false;
+            handler.enabled = false;
+        }
+        foreach (DamageOnTouch damage in GetComponentsInChildren<DamageOnTouch>(true)) damage.enabled = false;
+        foreach (Attack attack in GetComponentsInChildren<Attack>(true)) attack.enabled = false;
+        foreach (Weapon weapon in GetComponentsInChildren<Weapon>(true))
+        {
+            weapon.enabled = false;
+            if (weapon.gameObject != gameObject && weapon.GetComponent<SpiritFollow>() == null)
+                weapon.gameObject.SetActive(false);
         }
     }
 
@@ -127,43 +85,6 @@ public class PlayerController : MonoBehaviour
             movement = Vector2.zero;
             return;
         }
-        ResetComboIfNeeded();
-
-        if (Input.GetMouseButtonDown(attackMouseButton) && Time.time >= lastAttackTime + attackCooldown
-            && (UnityEngine.EventSystems.EventSystem.current == null
-                || !UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject()))
-        {
-            if (spiritFollow == null || !spiritFollow.IsWeaponMode)
-            {
-                return;
-            }
-
-            lastAttackTime = Time.time;
-            AdvanceComboStep();
-            PlaySwingAudio();
-
-            string attackTrigger = GetCurrentAttackTriggerName();
-
-            if (anim != null)
-            {
-                anim.SetTrigger(attackTrigger);
-            }
-
-            if (triggerWeaponAnimatorAttacks && weaponAnimator != null)
-            {
-                weaponAnimator.SetTrigger(attackTrigger);
-            }
-            if (attackArea != null)
-            {
-                if (attackAreaCoroutine != null)
-                {
-                    StopCoroutine(attackAreaCoroutine);
-                }
-
-                attackAreaCoroutine = StartCoroutine(EnableAttackAreaTemporarily());
-            }
-        }
-
         movement.x = Input.GetAxisRaw(HorizontalAxis);
 
         float vertical = Input.GetAxisRaw(VerticalAxis);
@@ -206,23 +127,6 @@ public class PlayerController : MonoBehaviour
         float currentDirectionX = Mathf.Sign(transform.localScale.x);
         transform.localScale = new Vector3(currentScale * currentDirectionX, currentScale, 1f);
     }
-    private void PlaySwingAudio()
-    {
-        if (!enableSwingAudio || swingClip == null) return;
-
-        if (swingSource == null)
-        {
-            GameObject audioObject = new GameObject("SwingAudio");
-            audioObject.transform.SetParent(transform, false);
-            swingSource = audioObject.AddComponent<AudioSource>();
-            swingSource.playOnAwake = false;
-            swingSource.spatialBlend = 0f;
-        }
-
-        swingSource.outputAudioMixerGroup = swingMixerGroup;
-        swingSource.PlayOneShot(swingClip, Mathf.Clamp01(swingVolume));
-    }
-
     private void UpdateFootstepAudio()
     {
         if (rb == null) return;
@@ -319,7 +223,6 @@ public class PlayerController : MonoBehaviour
     private void OnDisable()
     {
         StopFootstepAudio();
-        if (swingSource != null) swingSource.Stop();
     }
 
     public void StopControl()
@@ -334,120 +237,6 @@ public class PlayerController : MonoBehaviour
     {
         canMove = true;
     }
-    private void ResetComboIfNeeded()
-    {
-        if (comboStep > 0 && Time.time > lastComboInputTime + comboResetTime)
-        {
-            comboStep = 0;
-        }
-    }
-    private void AdvanceComboStep()
-    {
-        comboStep++;
-
-        int maxComboStep = comboAttackTriggerNames != null && comboAttackTriggerNames.Length > 0
-            ? comboAttackTriggerNames.Length
-            : 1;
-
-        if (comboStep > maxComboStep)
-        {
-            comboStep = 1;
-        }
-
-        lastComboInputTime = Time.time;
-    }
-    private string GetCurrentAttackTriggerName()
-    {
-        if (comboAttackTriggerNames == null || comboAttackTriggerNames.Length == 0)
-        {
-            return attackTriggerName;
-        }
-
-        int triggerIndex = Mathf.Clamp(comboStep - 1, 0, comboAttackTriggerNames.Length - 1);
-        return comboAttackTriggerNames[triggerIndex];
-    }
-    private float GetCurrentKnockbackForce()
-    {
-        if (comboStep == 2) return secondHitKnockbackForce;
-        if (comboStep == 3) return thirdHitKnockbackForce;
-        return 0f;
-    }
-
-    private void ConfigureAttackKnockback()
-    {
-        float knockbackForce = GetCurrentKnockbackForce();
-        float damageMultiplier = comboStep == 3 ? thirdHitDamageMultiplier : 1f;
-
-        for (int i = 0; i < attackDamageAreas.Length; i++)
-        {
-            DamageOnTouch damageArea = attackDamageAreas[i];
-            if (damageArea == null) continue;
-
-            damageArea.Owner = gameObject;
-            damageArea.MinDamageCaused = baseMinDamage[i] * damageMultiplier;
-            damageArea.MaxDamageCaused = baseMaxDamage[i] * damageMultiplier;
-            damageArea.DamageCausedKnockbackType = knockbackForce > 0f
-                ? DamageOnTouch.KnockbackStyles.AddForce
-                : DamageOnTouch.KnockbackStyles.NoKnockback;
-            // PolygonCollider2D is treated as 3D by this engine version; supply an explicit XY direction on hit.
-            damageArea.DamageCausedKnockbackDirection = DamageOnTouch.KnockbackDirections.BasedOnScriptDirection;
-            damageArea.DamageCausedKnockbackForce = Vector3.right * knockbackForce;
-            // Keep hit immunity shorter than the combo interval so the next slash can connect.
-            damageArea.InvincibilityDuration = Mathf.Clamp(attackHitInvincibilityDuration,
-                0f, Mathf.Max(0f, attackCooldown - Time.fixedDeltaTime));
-        }
-    }
-
-    private void OnAttackHitDamageable(Health target)
-    {
-        if (GetCurrentKnockbackForce() <= 0f || target == null
-            || target.KnockbackForceMultiplier <= 0f || !target.CanGetKnockback(null))
-        {
-            return;
-        }
-
-        TopDownController2D controller = target.GetComponentInParent<TopDownController2D>();
-        if (controller == null || !controller.isActiveAndEnabled) return;
-
-        Vector3 direction = controller.transform.position - transform.position;
-        direction.z = 0f;
-        if (direction.sqrMagnitude < 0.0001f)
-        {
-            direction = anim != null
-                ? new Vector3(anim.GetFloat("moveX"), anim.GetFloat("moveY"), 0f)
-                : Vector3.zero;
-            if (direction.sqrMagnitude < 0.0001f)
-            {
-                direction = transform.localScale.x < 0f ? Vector3.left : Vector3.right;
-            }
-        }
-        foreach (DamageOnTouch damageArea in attackDamageAreas)
-        {
-            if (damageArea != null)
-            {
-                damageArea.SetKnockbackScriptDirection(direction.normalized);
-            }
-        }
-
-        SecondHitKnockback2D knockback = controller.GetComponent<SecondHitKnockback2D>();
-        if (knockback == null)
-        {
-            knockback = controller.gameObject.AddComponent<SecondHitKnockback2D>();
-        }
-        float duration = comboStep == 3 ? thirdHitKnockbackDuration : secondHitKnockbackDuration;
-        knockback.Begin(duration);
-    }
-
-    private IEnumerator EnableAttackAreaTemporarily()
-    {
-        ConfigureAttackKnockback();
-        attackArea.SetActive(true);
-        yield return new WaitForSeconds(attackAreaActiveTime);
-        attackArea.SetActive(false);
-        attackAreaCoroutine = null;
-    }
-
-
     //rb.MovePosition(rb.position + movement*moveSpeed*Time.fixedDeltaTime);
 }
 

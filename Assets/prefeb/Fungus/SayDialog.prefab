@@ -457,7 +457,7 @@ MonoBehaviour:
   audioMode: 0
   beepSounds: []
   soundEffect: {fileID: 0}
-  inputSound: {fileID: 8300000, guid: f7d17df6340791b40827777abcf28842, type: 3}
+  inputSound: {fileID: 8300000, guid: 14a396b1562834718b2d52b9c4639264, type: 3}
 --- !u!114 &4674950125540882100
 MonoBehaviour:
   m_ObjectHideFlags: 0

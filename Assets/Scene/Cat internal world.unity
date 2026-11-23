@@ -878,27 +878,27 @@ PrefabInstance:
     - target: {fileID: 6013225721229580687, guid: cfaaa476d2825a74893ed71ba40d355c,
         type: 3}
       propertyPath: m_LocalScale.x
-      value: 28.701666
+      value: 32.64
       objectReference: {fileID: 0}
     - target: {fileID: 6013225721229580687, guid: cfaaa476d2825a74893ed71ba40d355c,
         type: 3}
       propertyPath: m_LocalScale.y
-      value: 16.147875
+      value: 18.36
       objectReference: {fileID: 0}
     - target: {fileID: 6013225721229580687, guid: cfaaa476d2825a74893ed71ba40d355c,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0.0073940754
+      value: -0.00093889236
       objectReference: {fileID: 0}
     - target: {fileID: 6013225721229580687, guid: cfaaa476d2825a74893ed71ba40d355c,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.005125165
+      value: 0.0020002127
       objectReference: {fileID: 0}
     - target: {fileID: 6013225721229580687, guid: cfaaa476d2825a74893ed71ba40d355c,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0.9933567
+      value: 1.0016575
       objectReference: {fileID: 0}
     - target: {fileID: 6013225721229580687, guid: cfaaa476d2825a74893ed71ba40d355c,
         type: 3}
@@ -969,7 +969,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 61dddfdc5e0e44ca298d8f46f7f5a915, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Fungus::Fungus.FungusState
-  selectedFlowchart: {fileID: 1143515395}
+  selectedFlowchart: {fileID: 357282611}
 --- !u!4 &248267010
 Transform:
   m_ObjectHideFlags: 1
@@ -1369,12 +1369,14 @@ GameObject:
   - component: {fileID: 357282653}
   - component: {fileID: 357282656}
   - component: {fileID: 357282658}
-  - component: {fileID: 357282662}
   - component: {fileID: 357282661}
   - component: {fileID: 357282660}
   - component: {fileID: 357282659}
   - component: {fileID: 357282657}
+  - component: {fileID: 357282662}
   - component: {fileID: 357282663}
+  - component: {fileID: 357282664}
+  - component: {fileID: 357282665}
   m_Layer: 0
   m_Name: "\u5167\u5FC3\u4E16\u754C\u9032\u5834\u52D5\u756B"
   m_TagString: Untagged
@@ -1398,7 +1400,7 @@ MonoBehaviour:
   scrollPos: {x: 0.7999878, y: 2.399994}
   variablesScrollPos: {x: 0, y: 0}
   variablesExpanded: 1
-  blockViewHeight: 510.40002
+  blockViewHeight: 268
   zoom: 1
   scrollViewRect:
     serializedVersion: 2
@@ -1408,7 +1410,8 @@ MonoBehaviour:
     height: 859
   selectedBlocks:
   - {fileID: 357282613}
-  selectedCommands: []
+  selectedCommands:
+  - {fileID: 357282664}
   variables: []
   description: 
   stepPause: 0
@@ -1509,6 +1512,8 @@ MonoBehaviour:
   - {fileID: 357282650}
   - {fileID: 357282648}
   - {fileID: 357282656}
+  - {fileID: 357282665}
+  - {fileID: 357282664}
   - {fileID: 357282663}
   - {fileID: 357282662}
   suppressAllAutoSelections: 0
@@ -1950,7 +1955,7 @@ MonoBehaviour:
   storyText: "\uFF1A \u300C\u5C0D\uFF0C\u5C31\u662F\u6211\u3002\u300D"
   description: 
   character: {fileID: 1632074145}
-  portrait: {fileID: 21300000, guid: 542226bb48ebfa542ba72aab4a21ab88, type: 3}
+  portrait: {fileID: 0}
   voiceOverClip: {fileID: 8300000, guid: b17a0298742d7f24489214107b7bb10f, type: 3}
   showAlways: 1
   showCount: 1
@@ -2503,8 +2508,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Fungus::Fungus.Block
   nodeRect:
     serializedVersion: 2
-    x: 309.6
-    y: 111.60002
+    x: 396
+    y: 73.20001
     width: 98.007996
     height: 40
   tint: {r: 1, g: 1, b: 1, a: 1}
@@ -2587,22 +2592,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 357282610}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 841589fc622bc494aa5405f416fa1301, type: 3}
+  m_Script: {fileID: 11500000, guid: 93cb9773f2ca04e2bbf7a68ccfc23267, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Fungus::Fungus.Menu
-  itemId: 47
+  m_EditorClassIdentifier: Fungus::Fungus.End
+  itemId: 52
   indentLevel: 0
-  text: "\u4E0B\u4E00\u6B65"
-  description: 
-  targetBlock: {fileID: 357282658}
-  hideIfVisited: 0
-  interactable:
-    booleanRef: {fileID: 0}
-    booleanVal: 1
-  setMenuDialog: {fileID: 0}
-  hideThisOption:
-    booleanRef: {fileID: 0}
-    booleanVal: 0
 --- !u!114 &357282663
 MonoBehaviour:
   m_ObjectHideFlags: 2
@@ -2612,14 +2606,52 @@ MonoBehaviour:
   m_GameObject: {fileID: 357282610}
   m_Enabled: 1
   m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 17a200dbd67304446a3019434503338a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Fungus::Fungus.CallMethod
+  itemId: 53
+  indentLevel: 0
+  targetObject: {fileID: 124187388}
+  methodName: StarControl
+  delay: 0
+--- !u!114 &357282664
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 357282610}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: dbd8c931f22994b9d90e2037fffaa770, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Fungus::Fungus.SetActive
-  itemId: 52
+  itemId: 54
   indentLevel: 0
   _targetGameObject:
     gameObjectRef: {fileID: 0}
-    gameObjectVal: {fileID: 787297395}
+    gameObjectVal: {fileID: 943919093}
+  activeState:
+    booleanRef: {fileID: 0}
+    booleanVal: 1
+  targetGameObjectOLD: {fileID: 0}
+--- !u!114 &357282665
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 357282610}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dbd8c931f22994b9d90e2037fffaa770, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Fungus::Fungus.SetActive
+  itemId: 55
+  indentLevel: 0
+  _targetGameObject:
+    gameObjectRef: {fileID: 0}
+    gameObjectVal: {fileID: 95003630}
   activeState:
     booleanRef: {fileID: 0}
     booleanVal: 1
@@ -11510,6 +11542,8 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 0
   worldCamera: {fileID: 0}
+  photoDamage: 20
+  photoHitInvincibility: 0.1
   showAimPreview: 1
   flashTexture: {fileID: 0}
   flashDuration: 0.12
@@ -12147,7 +12181,7 @@ PrefabInstance:
     - target: {fileID: 8319041695650652044, guid: 6a790ba04f57ad54ca47679a3101cfff,
         type: 3}
       propertyPath: orthographic size
-      value: 7.9125004
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 8319041695650652044, guid: 6a790ba04f57ad54ca47679a3101cfff,
         type: 3}
