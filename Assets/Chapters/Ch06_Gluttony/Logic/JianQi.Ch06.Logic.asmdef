@@ -1,0 +1,14 @@
+{
+    "name": "JianQi.Ch06.Logic",
+    "rootNamespace": "JianQi.Ch06",
+    "references": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": true
+}

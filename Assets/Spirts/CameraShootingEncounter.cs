@@ -67,6 +67,11 @@ public class CameraShootingEncounter : MonoBehaviour
 
     public bool EncounterActive => encounterActive;
 
+    /// <summary>Optional chapter hook: when set and returning false, an on-target shot counts as a miss (Ch06 pause window).</summary>
+    public System.Func<bool> HitGate;
+    /// <summary>Optional chapter hook: while true, the wisher target stops moving.</summary>
+    [System.NonSerialized] public bool FreezeMovement;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -141,7 +146,7 @@ public class CameraShootingEncounter : MonoBehaviour
         Vector2 mouseLocalPosition = GetMouseLocalPosition();
         float distance = Vector2.Distance(mouseLocalPosition, wisherTargetUi.anchoredPosition);
 
-        if (distance > hitRadius)
+        if (distance > hitRadius || (HitGate != null && !HitGate()))
         {
             onShotMissed?.Invoke();
             return;
@@ -392,7 +397,7 @@ public class CameraShootingEncounter : MonoBehaviour
 
     private void UpdateWisherMovement()
     {
-        if (wisherTargetUi == null)
+        if (wisherTargetUi == null || FreezeMovement)
         {
             return;
         }

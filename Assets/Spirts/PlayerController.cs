@@ -27,6 +27,9 @@ public class PlayerController : MonoBehaviour
     private int lastFootstepClipIndex = -1;
 
     public bool canMove = true;
+    [HideInInspector] public float speedMultiplier = 1f; // chapter hook (Ch06 binge slow-down); 1 = normal
+    private Vector2 externalVelocity; // chapter hook: pulls (Ch06 binge / maw), consumed every FixedUpdate
+    public void AddExternalVelocity(Vector2 velocity) { if (canMove) externalVelocity += velocity; } // call from FixedUpdate
     [Header("人物移動界線設置")]
     public float minY, maxY;
     [Header("設置")]
@@ -114,7 +117,9 @@ public class PlayerController : MonoBehaviour
             rb.linearVelocity = Vector2.zero;
             return;
         }
-        Vector2 nextPosition = rb.position + movement.normalized * moveSpeed * Time.fixedDeltaTime;
+        Vector2 nextPosition = rb.position + movement.normalized * moveSpeed * speedMultiplier * Time.fixedDeltaTime;
+        nextPosition += externalVelocity * Time.fixedDeltaTime;
+        externalVelocity = Vector2.zero;
       //nextPosition.y=Mathf.Clamp(nextPosition.y,minY,maxY);
       
 
