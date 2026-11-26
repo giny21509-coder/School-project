@@ -16,12 +16,17 @@ public sealed class SpiritCameraFlash : MonoBehaviour
     [SerializeField] private KeyCode flashKey = KeyCode.F;
     [SerializeField, Min(0.1f)] private float cooldown = 1.2f;
     [SerializeField, Min(0.1f)] private float range = 5f;
+    [Tooltip("Fan angle when aiming close to the spirit.")]
     [SerializeField, Range(1f, 180f)] private float coneAngle = 70f;
+    [Tooltip("Fan angle when the cursor reaches the maximum flash range.")]
+    [SerializeField, Range(1f, 180f)] private float farAimAngle = 30f;
     [SerializeField] private LayerMask targetLayers = ~0;
     [SerializeField] private LayerMask obstacleLayers;
     [SerializeField] private Camera worldCamera;
 
     [Header("Photo Attack")]
+    [Tooltip("Hold the left mouse button for this many seconds, then release to hit a mist shield.")]
+    [SerializeField, Min(0.1f)] private float chargeDuration = 3f;
     [SerializeField, Min(0f)] private float photoDamage = 20f;
     [SerializeField, Min(0f)] private float photoHitInvincibility = 0.1f;
 
@@ -64,6 +69,10 @@ public sealed class SpiritCameraFlash : MonoBehaviour
     private bool isPhotoMode;
     private bool isAiming;
     private bool flashPending;
+    private bool pendingShotIsCharged;
+    private float? chargeStartedAt;
+    private float ChargeProgress => chargeStartedAt.HasValue
+        ? Mathf.Clamp01((Time.time - chargeStartedAt.Value) / Mathf.Max(0.1f, chargeDuration)) : 0f;
     private Vector2 lastAimPosition;
 
     public void Initialize()
@@ -81,13 +90,13 @@ public sealed class SpiritCameraFlash : MonoBehaviour
 
     private void Update()
     {
-        ReadFlashInput(out bool togglePressed, out bool shootPressed);
+        ReadFlashInput(out bool togglePressed, out bool shootPressed, out bool shootReleased);
         bool hasAim = TryGetMouseAimPosition(out Vector2 aimPosition)
             && (EventSystem.current == null || !EventSystem.current.IsPointerOverGameObject());
-        ProcessAimInput(togglePressed, shootPressed, hasAim, aimPosition);
+        ProcessAimInput(togglePressed, shootPressed, shootReleased, hasAim, aimPosition);
     }
 
-    private void ProcessAimInput(bool togglePressed, bool shootPressed, bool hasAim, Vector2 aimPosition)
+    private void ProcessAimInput(bool togglePressed, bool shootPressed, bool shootReleased, bool hasAim, Vector2 aimPosition)
     {
         if (!CanUsePhotoMode)
         {
@@ -114,7 +123,13 @@ public sealed class SpiritCameraFlash : MonoBehaviour
         isAiming = true;
         lastAimPosition = aimPosition;
         spirit.SetFlashAim(true, aimPosition);
-        if (!shootPressed || Time.time < nextFlashTime) return;
+        if (shootPressed) chargeStartedAt = Time.time;
+        if (!shootReleased || !chargeStartedAt.HasValue) return;
+
+        bool fullyCharged = ChargeProgress >= 1f;
+        chargeStartedAt = null;
+        if (Time.time < nextFlashTime) return;
+        pendingShotIsCharged = fullyCharged;
         flashPending = true;
         CompletePendingFlash();
     }
@@ -129,7 +144,7 @@ public sealed class SpiritCameraFlash : MonoBehaviour
         }
         if (!spirit.IsAtFlashAimPosition) return;
         flashPending = false;
-        TryFlashAt(lastAimPosition);
+        FirePhoto(lastAimPosition, pendingShotIsCharged);
     }
 
     private void UpdateAimPreview()
@@ -141,9 +156,10 @@ public sealed class SpiritCameraFlash : MonoBehaviour
                 aimPreview = GetComponent<SpiritFlashAimPreview>();
                 if (aimPreview == null) aimPreview = gameObject.AddComponent<SpiritFlashAimPreview>();
             }
-            aimPreview.Show(transform.position, lastAimPosition, worldCamera, range, coneAngle,
+            float angle = GetAimAngle(Vector2.Distance(transform.position, lastAimPosition));
+            aimPreview.Show(transform.position, lastAimPosition, worldCamera, range, angle,
                 obstacleLayers, GetComponent<SpriteRenderer>(), CooldownRemaining <= 0f,
-                false);
+                Time.time < flashEndTime, ChargeProgress);
         }
         else HideAimPreview();
     }
@@ -184,37 +200,52 @@ public sealed class SpiritCameraFlash : MonoBehaviour
     private void SuspendAim()
     {
         isAiming = false;
+        chargeStartedAt = null;
         flashPending = false;
         if (spirit != null) spirit.SetFlashAim(false, Vector2.zero);
         HideAimPreview();
     }
 
-    private void ReadFlashInput(out bool togglePressed, out bool shootPressed)
+    private void ReadFlashInput(out bool togglePressed, out bool shootPressed, out bool shootReleased)
     {
-        togglePressed = shootPressed = false;
+        togglePressed = shootPressed = shootReleased = false;
 #if ENABLE_INPUT_SYSTEM
         if (Keyboard.current != null && System.Enum.TryParse(flashKey.ToString(), true, out Key key))
             togglePressed = Keyboard.current[key].wasPressedThisFrame;
 #if ENABLE_LEGACY_INPUT_MANAGER
         else togglePressed = Input.GetKeyDown(flashKey);
 #endif
-        if (Mouse.current != null) shootPressed = Mouse.current.leftButton.wasPressedThisFrame;
-#if ENABLE_LEGACY_INPUT_MANAGER
-        else shootPressed = Input.GetMouseButtonDown(0);
-#endif
+        if (Mouse.current != null)
+        {
+            shootPressed = Mouse.current.leftButton.wasPressedThisFrame;
+            shootReleased = Mouse.current.leftButton.wasReleasedThisFrame;
+            return;
+        }
 #elif ENABLE_LEGACY_INPUT_MANAGER
         togglePressed = Input.GetKeyDown(flashKey);
+#endif
+#if ENABLE_LEGACY_INPUT_MANAGER
         shootPressed = Input.GetMouseButtonDown(0);
+        shootReleased = Input.GetMouseButtonUp(0);
 #endif
     }
 
+    private float GetAimAngle(float aimDistance)
+    {
+        float fractionOfRange = Mathf.Clamp01(aimDistance / Mathf.Max(0.1f, range));
+        return Mathf.Lerp(coneAngle, Mathf.Min(coneAngle, farAimAngle), fractionOfRange);
+    }
+
     // All callers, including UI buttons, must obey mode and cooldown checks.
-    public int TryFlashAt(Vector2 aimPosition)
+    public int TryFlashAt(Vector2 aimPosition) => FirePhoto(aimPosition, false);
+
+    private int FirePhoto(Vector2 aimPosition, bool fullyCharged)
     {
         if (!CanFlash || Time.time < nextFlashTime) return -1;
         Vector2 origin = transform.position;
         Vector2 direction = aimPosition - origin;
         if (direction.sqrMagnitude < 0.0001f) return -1;
+        float halfAngle = GetAimAngle(direction.magnitude) * 0.5f;
         nextFlashTime = Time.time + Mathf.Max(0.1f, cooldown);
         hitTargets.Clear();
         int affectedTargets = 0;
@@ -225,14 +256,14 @@ public sealed class SpiritCameraFlash : MonoBehaviour
             if (target == null || hitTargets.Contains(target)) continue;
             Vector2 targetPosition = target.transform.position;
             Vector2 offset = targetPosition - origin;
-            if (offset.magnitude > range || Vector2.Angle(direction, offset) > coneAngle * 0.5f) continue;
+            if (offset.magnitude > range || Vector2.Angle(direction, offset) > halfAngle) continue;
             if (Physics2D.Linecast(origin, targetPosition, obstacleLayers).collider != null) continue;
             hitTargets.Add(target);
             InnerWorldMistShield shield = target.GetComponentInParent<InnerWorldMistShield>();
             if (shield != null && shield.IsShielded)
             {
                 // Breaking the mist and damaging the exposed enemy are separate photos.
-                if (shield.ReceiveFlash()) affectedTargets++;
+                if (fullyCharged && shield.ReceiveFlash()) affectedTargets++;
                 continue;
             }
             if (DamagePhotoTarget(target, offset.normalized)) affectedTargets++;

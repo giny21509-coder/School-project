@@ -68,7 +68,7 @@ public class InnerWorldDistanceSpawner : MonoBehaviour
     [SerializeField, Min(1)] private int itemGuaranteeAttempts = 8;
 
     [Header("Mist Shield / Spirit Flash")]
-    [SerializeField, Min(1)] private int imageShieldFlashes = 2;
+    [SerializeField, Min(1)] private int imageShieldFlashes = 3;
     [SerializeField, Min(1)] private int itemShieldFlashes = 3;
     public int GetShieldFlashes(MonsterKind kind) => kind == MonsterKind.Item
         ? Mathf.Max(1, itemShieldFlashes) : Mathf.Max(1, imageShieldFlashes);

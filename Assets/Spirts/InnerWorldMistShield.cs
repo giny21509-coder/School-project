@@ -6,7 +6,7 @@ using UnityEngine.Events;
 public sealed class InnerWorldMistShield : MonoBehaviour
 {
     [Header("Mist Shield")]
-    [SerializeField, Min(1)] private int flashesToBreak = 2;
+    [SerializeField, Min(1)] private int flashesToBreak = 3;
     [SerializeField] private Texture2D mistTexture;
     [SerializeField] private GameObject mistVisual;
 

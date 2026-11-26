@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
@@ -15,10 +16,23 @@ public sealed class SpiritFlashAimPreview : MonoBehaviour
     [SerializeField, Range(0f, 3f)] private float lightIntensity = 1.2f;
     [SerializeField, Min(8f)] private float reticlePixels = 36f;
 
+    [Header("Dashed Range Boundaries")]
+    [SerializeField] private Color readyLine = new Color(1f, 0.97f, 0.85f, 0.95f);
+    [SerializeField] private Color cooldownLine = new Color(0.6f, 0.7f, 0.75f, 0.5f);
+    [SerializeField, Min(0.01f)] private float dashLength = 0.25f;
+    [SerializeField, Min(0.01f)] private float dashGap = 0.18f;
+    [SerializeField, Min(0.005f)] private float lineWidth = 0.035f;
+    [SerializeField, Min(0f)] private float spiritClearance = 0.06f;
+
     private GameObject root;
     private Transform sector;
     private Mesh mesh;
     private MeshRenderer fill;
+    private Mesh boundaryMesh;
+    private MeshRenderer boundaries;
+    private readonly List<Vector3> boundaryVertices = new List<Vector3>(256);
+    private readonly List<int> boundaryTriangles = new List<int>(384);
+    private readonly List<Color> boundaryColors = new List<Color>(256);
     private Light2D spotlight;
     private Transform reticle;
     private LineRenderer[] reticleCorners;
@@ -27,7 +41,7 @@ public sealed class SpiritFlashAimPreview : MonoBehaviour
     private readonly Vector2[] uv = new Vector2[ArcSegments + 2];
 
     public void Show(Vector3 origin, Vector2 aimPosition, Camera camera, float range, float angle,
-        LayerMask obstacles, SpriteRenderer source, bool ready, bool flashing)
+        LayerMask obstacles, SpriteRenderer source, bool ready, bool flashing, float chargeProgress = 0f)
     {
         Vector2 direction = aimPosition - (Vector2)origin;
         if (!isActiveAndEnabled || camera == null || direction.sqrMagnitude < 0.0001f)
@@ -70,9 +84,34 @@ public sealed class SpiritFlashAimPreview : MonoBehaviour
         int order = source != null ? source.sortingOrder : 0;
         fill.sortingLayerID = layer;
         fill.sortingOrder = order + 1;
+        fill.enabled = flashing;
         Color beamColor = flashing ? new Color(1f, 1f, 0.95f, 0.65f) : ready ? readyFill : cooldownFill;
         propertyBlock.SetColor(BeamColorId, beamColor);
         fill.SetPropertyBlock(propertyBlock);
+
+        // Use the same edge rays, range and wall clipping as the flash sector.
+        boundaries.sortingLayerID = layer;
+        boundaries.sortingOrder = order + 4;
+        Color lineColor = flashing ? Color.white : ready ? readyLine : cooldownLine;
+        boundaryVertices.Clear();
+        boundaryTriangles.Clear();
+        boundaryColors.Clear();
+        float startDistance = Mathf.Max(0f, spiritClearance);
+        if (source != null && source.sprite != null)
+        {
+            // Recheck animated world bounds so moving, flipping and scaling stay clear.
+            Bounds bounds = source.bounds;
+            startDistance += ((Vector2)bounds.extents).magnitude
+                + Vector2.Distance(origin, bounds.center);
+        }
+        startDistance += Mathf.Max(0.005f, lineWidth) * 0.5f;
+        AddDashedBoundary(vertices[1], lineColor, startDistance);
+        AddDashedBoundary(vertices[ArcSegments + 1], lineColor, startDistance);
+        boundaryMesh.Clear();
+        boundaryMesh.SetVertices(boundaryVertices);
+        boundaryMesh.SetColors(boundaryColors);
+        boundaryMesh.SetTriangles(boundaryTriangles, 0);
+        boundaryMesh.RecalculateBounds();
 
         // Light2D uses local up as the center of its cone; the beam mesh points right.
         spotlight.transform.localRotation = Quaternion.Euler(0f, 0f, -90f);
@@ -83,7 +122,7 @@ public sealed class SpiritFlashAimPreview : MonoBehaviour
         spotlight.color = new Color(beamColor.r, beamColor.g, beamColor.b, 1f);
         spotlight.intensity = lightIntensity * (flashing ? 1.5f : ready ? 1f : 0.25f);
         // Collider-only obstacles lack shadow casters; keep their clipped mesh authoritative.
-        spotlight.enabled = illuminateSprites && obstacles.value == 0;
+        spotlight.enabled = flashing && illuminateSprites && obstacles.value == 0;
 
         if (reticle != null)
         {
@@ -93,11 +132,12 @@ public sealed class SpiritFlashAimPreview : MonoBehaviour
             float viewHeight = camera.orthographic ? camera.orthographicSize * 2f
                 : depth * Mathf.Tan(camera.fieldOfView * Mathf.Deg2Rad * 0.5f) * 2f;
             float pixelSize = viewHeight / Mathf.Max(1, camera.pixelHeight);
-            float halfSize = pixelSize * reticlePixels * 0.5f;
+            float halfSize = pixelSize * reticlePixels * 0.5f * Mathf.Lerp(1f, 0.65f, chargeProgress);
             float cornerLength = halfSize * 0.6f;
             bool inRange = Vector2.Distance(origin, aimPosition) <= range;
             Color color = flashing ? Color.white : ready && inRange
                 ? new Color(1f, 0.97f, 0.85f, 1f) : new Color(0.6f, 0.7f, 0.75f, 0.75f);
+            if (chargeProgress >= 1f) color = new Color(1f, 0.78f, 0.22f, 1f);
             for (int i = 0; i < reticleCorners.Length; i++)
             {
                 float x = i % 2 == 0 ? -1f : 1f;
@@ -113,11 +153,39 @@ public sealed class SpiritFlashAimPreview : MonoBehaviour
         }
     }
 
+    private void AddDashedBoundary(Vector3 endpoint, Color color, float startDistance)
+    {
+        float distance = endpoint.magnitude;
+        if (distance < 0.0001f) return;
+        Vector3 direction = endpoint / distance;
+        Vector3 side = new Vector3(-direction.y, direction.x, 0f) * Mathf.Max(0.005f, lineWidth) * 0.5f;
+        float length = Mathf.Max(0.01f, dashLength);
+        float step = length + Mathf.Max(0.01f, dashGap);
+        for (float start = startDistance; start < distance; start += step)
+        {
+            Vector3 a = direction * start;
+            Vector3 b = direction * Mathf.Min(start + length, distance);
+            int index = boundaryVertices.Count;
+            boundaryVertices.Add(a - side);
+            boundaryVertices.Add(a + side);
+            boundaryVertices.Add(b + side);
+            boundaryVertices.Add(b - side);
+            for (int i = 0; i < 4; i++) boundaryColors.Add(color);
+            boundaryTriangles.Add(index);
+            boundaryTriangles.Add(index + 1);
+            boundaryTriangles.Add(index + 2);
+            boundaryTriangles.Add(index);
+            boundaryTriangles.Add(index + 2);
+            boundaryTriangles.Add(index + 3);
+        }
+    }
+
     private bool Prepare()
     {
         if (root != null) return true;
         Material rangeMaterial = Resources.Load<Material>("InnerWorldCombat/SpotlightBeam");
-        if (rangeMaterial == null) return false;
+        Material reticleMaterial = Resources.Load<Material>("InnerWorldCombat/Reticle");
+        if (rangeMaterial == null || reticleMaterial == null) return false;
         root = new GameObject("SpiritFlashAimPreview");
         SceneManager.MoveGameObjectToScene(root, gameObject.scene);
         var sectorObject = new GameObject("SpotlightBeam");
@@ -141,6 +209,16 @@ public sealed class SpiritFlashAimPreview : MonoBehaviour
         fill.receiveShadows = false;
         propertyBlock = new MaterialPropertyBlock();
 
+        var boundaryObject = new GameObject("Dashed flash range boundaries");
+        boundaryObject.transform.SetParent(sector, false);
+        boundaryMesh = new Mesh { name = "SpiritFlashDashedBoundaries" };
+        boundaryMesh.MarkDynamic();
+        boundaryObject.AddComponent<MeshFilter>().sharedMesh = boundaryMesh;
+        boundaries = boundaryObject.AddComponent<MeshRenderer>();
+        boundaries.sharedMaterial = reticleMaterial;
+        boundaries.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        boundaries.receiveShadows = false;
+
         bool hasSceneLighting = false;
         foreach (Light2D light in Object.FindObjectsByType<Light2D>(FindObjectsSortMode.None))
             if (light.isActiveAndEnabled) { hasSceneLighting = true; break; }
@@ -161,7 +239,6 @@ public sealed class SpiritFlashAimPreview : MonoBehaviour
         spotlight.falloffIntensity = 0.8f;
         spotlight.volumetricEnabled = false;
 
-        Material reticleMaterial = Resources.Load<Material>("InnerWorldCombat/Reticle");
         if (reticleMaterial != null)
         {
             var reticleObject = new GameObject("Aim focus frame");
@@ -205,5 +282,6 @@ public sealed class SpiritFlashAimPreview : MonoBehaviour
     {
         DestroyOwned(root);
         DestroyOwned(mesh);
+        DestroyOwned(boundaryMesh);
     }
 }
