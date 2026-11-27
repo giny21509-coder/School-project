@@ -40,6 +40,18 @@ public class PlayerController : MonoBehaviour
     public float minScale = 0.7f; 
     public float maxScale = 1.3f;
 
+    [Header("Depth Brightness")]
+    [Tooltip("Darken the player at Max Y and brighten at Min Y. Enable per scene.")]
+    public bool enableDepthBrightness = false;
+    [Tooltip("Player body only. Defaults to the SpriteRenderer on this object.")]
+    public SpriteRenderer depthSpriteRenderer;
+    [Range(0f, 1f)] public float farBrightness = 0.45f;
+    [Range(0f, 1f)] public float nearBrightness = 1f;
+
+    private Color originalSpriteColor;
+    private bool hasSpriteColor;
+    private bool depthBrightnessApplied;
+
     [Header("Camera Companion")]
     public SpiritFollow spiritFollow;
     [HideInInspector] public Animator weaponAnimator;
@@ -49,11 +61,18 @@ public class PlayerController : MonoBehaviour
     {
         anim= GetComponent<Animator>();
         rb = GetComponent<Rigidbody2D>();
+        if (depthSpriteRenderer == null) depthSpriteRenderer = GetComponent<SpriteRenderer>();
+        if (depthSpriteRenderer != null)
+        {
+            originalSpriteColor = depthSpriteRenderer.color;
+            hasSpriteColor = true;
+        }
     }
 
     private void OnEnable()
     {
         DisableWeaponCombat();
+        UpdateDepthBrightness();
     }
 
     private void DisableWeaponCombat()
@@ -127,6 +146,43 @@ public class PlayerController : MonoBehaviour
         float currentDirectionX = Mathf.Sign(transform.localScale.x);
         transform.localScale = new Vector3(currentScale * currentDirectionX, currentScale, 1f);
     }
+    private void LateUpdate()
+    {
+        UpdateDepthBrightness();
+    }
+
+    private void UpdateDepthBrightness()
+    {
+        if (!enableDepthBrightness || Mathf.Approximately(minY, maxY))
+        {
+            RestoreDepthBrightness();
+            return;
+        }
+        if (depthSpriteRenderer == null || !hasSpriteColor) return;
+
+        // Use rendered world position so Rigidbody interpolation stays smooth.
+        float depth = Mathf.InverseLerp(Mathf.Max(minY, maxY), Mathf.Min(minY, maxY), transform.position.y);
+        float brightness = Mathf.Lerp(Mathf.Clamp01(farBrightness), Mathf.Clamp01(nearBrightness), depth);
+        Color color = depthSpriteRenderer.color;
+        color.r = originalSpriteColor.r * brightness;
+        color.g = originalSpriteColor.g * brightness;
+        color.b = originalSpriteColor.b * brightness;
+        // Keep the current alpha so fading and visibility remain independent.
+        depthSpriteRenderer.color = color;
+        depthBrightnessApplied = true;
+    }
+
+    private void RestoreDepthBrightness()
+    {
+        if (!depthBrightnessApplied || depthSpriteRenderer == null || !hasSpriteColor) return;
+        Color color = depthSpriteRenderer.color;
+        color.r = originalSpriteColor.r;
+        color.g = originalSpriteColor.g;
+        color.b = originalSpriteColor.b;
+        depthSpriteRenderer.color = color;
+        depthBrightnessApplied = false;
+    }
+
     private void UpdateFootstepAudio()
     {
         if (rb == null) return;
@@ -223,6 +279,7 @@ public class PlayerController : MonoBehaviour
     private void OnDisable()
     {
         StopFootstepAudio();
+        RestoreDepthBrightness();
     }
 
     public void StopControl()
