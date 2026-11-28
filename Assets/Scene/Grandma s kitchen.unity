@@ -3565,6 +3565,10 @@ MonoBehaviour:
   blockName: "\u51B0\u7BB1\u5C0D\u8A71"
   interactkey: 114
   isplayerInRange: 1
+  interactionStateKey: 
+  objectsActiveAfterInteraction: []
+  objectsInactiveAfterInteraction: []
+  allowMouseClick: 0
 --- !u!61 &1491970020
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -3992,7 +3996,7 @@ PrefabInstance:
     - target: {fileID: 6851474912222729509, guid: 9a1dbb467b69c364bb5f1e97a468cb5e,
         type: 3}
       propertyPath: autoCreateTextSceneCameraModeTest
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8797325142649175030, guid: 9a1dbb467b69c364bb5f1e97a468cb5e,
         type: 3}
@@ -4250,6 +4254,10 @@ MonoBehaviour:
   blockName: "\u5C0F\u8C93\u5C0D\u8A71"
   interactkey: 114
   isplayerInRange: 0
+  interactionStateKey: 
+  objectsActiveAfterInteraction: []
+  objectsInactiveAfterInteraction: []
+  allowMouseClick: 0
 --- !u!114 &1720073990 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 3302530473796441440, guid: 58f1b28d911e61845a741fd9c9f86c5b,
@@ -4341,6 +4349,7 @@ GameObject:
   - component: {fileID: 1845236243}
   - component: {fileID: 1845236242}
   - component: {fileID: 1845236241}
+  - component: {fileID: 1845236244}
   m_Layer: 5
   m_Name: "\u98E2\u9913 Cat (2)"
   m_TagString: Untagged
@@ -4397,7 +4406,7 @@ SpriteRenderer:
   m_SortingLayer: 5
   m_SortingOrder: 2
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: 2c4121b97dd0a804fa4228f4bd599c54, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 260cd4624bf97c042b43da48ffdf1f91, type: 3}
   m_Color: {r: 0.3735848, g: 0.3735848, b: 0.3735848, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -4434,6 +4443,28 @@ RectTransform:
   m_AnchoredPosition: {x: -6.3, y: -5.5}
   m_SizeDelta: {x: 11.22, y: 14.02}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!95 &1845236244
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1845236240}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 8501564c809791148982427d64201f05, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &1871569640
 GameObject:
   m_ObjectHideFlags: 0
@@ -4853,8 +4884,8 @@ BoxCollider2D:
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 14.02, y: 11.22}
-    newSize: {x: 14.02, y: 11.22}
+    oldSize: {x: 14.769231, y: 7.3846154}
+    newSize: {x: 14.769231, y: 7.3846154}
     adaptiveTilingThreshold: 0.5
     drawMode: 0
     adaptiveTiling: 0
@@ -4905,6 +4936,8 @@ GameObject:
   - component: {fileID: 836512479970229777}
   - component: {fileID: 9153821171767675190}
   - component: {fileID: 333982438444200404}
+  - component: {fileID: 9153821171767675192}
+  - component: {fileID: 9153821171767675191}
   m_Layer: 5
   m_Name: '  Cat'
   m_TagString: Untagged
@@ -6696,6 +6729,87 @@ MonoBehaviour:
   onCannotStartWithoutCamera:
     m_PersistentCalls:
       m_Calls: []
+--- !u!212 &9153821171767675191
+SpriteRenderer:
+  serializedVersion: 2
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1202121679930051861}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 0
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_Sprite: {fileID: 21300000, guid: 260cd4624bf97c042b43da48ffdf1f91, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_FlipX: 0
+  m_FlipY: 0
+  m_DrawMode: 0
+  m_Size: {x: 14.769231, y: 7.3846154}
+  m_AdaptiveModeThreshold: 0.5
+  m_SpriteTileMode: 0
+  m_WasSpriteAssigned: 1
+  m_SpriteSortPoint: 0
+--- !u!95 &9153821171767675192
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1202121679930051861}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 0}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

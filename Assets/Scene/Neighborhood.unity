@@ -3591,6 +3591,12 @@ PrefabInstance:
       propertyPath: m_Name
       value: "\u9130\u5C45\u963F\u59E8"
       objectReference: {fileID: 0}
+    - target: {fileID: 8265178226771917896, guid: 9ddd76723ba7e97468c35085cf991495,
+        type: 3}
+      propertyPath: 'portraits.Array.data[0]'
+      value: 
+      objectReference: {fileID: 21300000, guid: 2df4a0de5d399d34db914329f94ce977,
+        type: 3}
     - target: {fileID: 8764113386011486013, guid: 9ddd76723ba7e97468c35085cf991495,
         type: 3}
       propertyPath: m_LocalPosition.x

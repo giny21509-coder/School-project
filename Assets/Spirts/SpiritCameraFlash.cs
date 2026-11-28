@@ -32,6 +32,15 @@ public sealed class SpiritCameraFlash : MonoBehaviour
 
     [Header("Aim Preview")]
     [SerializeField] private bool showAimPreview = true;
+    [SerializeField, Min(0f)] private float rangeExpandDuration = 0.35f;
+    [SerializeField, Min(0f)] private float rangeRetractDuration = 0.25f;
+    [Tooltip("Vertical scale of the ground attack area, for both the preview and hits.")]
+    [SerializeField, Range(0.1f, 1f)] private float circleDepthScale = 0.36f;
+    [Tooltip("Horizontal corridor floor sprites, including the recycled pieces.")]
+    [SerializeField] private SpriteRenderer[] floorTiles;
+    [Tooltip("Fraction of the sprite height occupied by the painted floor, measured from the bottom.")]
+    [SerializeField, Range(0f, 1f)] private float floorHeightFraction = 1f;
+    private readonly Vector4[] nearbyFloorRects = new Vector4[FlashGroundRange.MaxFloorRects];
 
     [Header("Flash Effect")]
     [SerializeField] private Texture2D flashTexture;
@@ -58,6 +67,7 @@ public sealed class SpiritCameraFlash : MonoBehaviour
 
     private SpiritFollow spirit;
     private PlayerController playerController;
+    private Collider2D playerBody;
     private MoreMountains.TopDownEngine.Health playerHealth;
     private readonly HashSet<Component> hitTargets = new HashSet<Component>();
     private float nextFlashTime;
@@ -66,6 +76,7 @@ public sealed class SpiritCameraFlash : MonoBehaviour
     private Sprite ownedSprite;
     private AudioSource audioSource;
     private SpiritFlashAimPreview aimPreview;
+    private float rangeProgress;
     private bool isPhotoMode;
     private bool isAiming;
     private bool flashPending;
@@ -81,6 +92,7 @@ public sealed class SpiritCameraFlash : MonoBehaviour
         if (spirit.player != null)
         {
             playerController = spirit.player.GetComponent<PlayerController>();
+            playerBody = spirit.player.GetComponent<Collider2D>();
             playerHealth = spirit.player.GetComponent<MoreMountains.TopDownEngine.Health>();
         }
         if (worldCamera == null) worldCamera = Camera.main;
@@ -107,7 +119,8 @@ public sealed class SpiritCameraFlash : MonoBehaviour
         {
             if (isPhotoMode)
             {
-                CancelAim();
+                isPhotoMode = false;
+                SuspendAim();
                 return;
             }
             isPhotoMode = true;
@@ -147,21 +160,35 @@ public sealed class SpiritCameraFlash : MonoBehaviour
         FirePhoto(lastAimPosition, pendingShotIsCharged);
     }
 
-    private void UpdateAimPreview()
+    private void UpdateAimPreview(float deltaTime)
     {
-        if (isAiming && showAimPreview && CanFlash)
+        if (!isPhotoMode && rangeProgress <= 0f) return;
+        if (!showAimPreview || !CanUsePhotoMode || worldCamera == null)
         {
-            if (aimPreview == null)
-            {
-                aimPreview = GetComponent<SpiritFlashAimPreview>();
-                if (aimPreview == null) aimPreview = gameObject.AddComponent<SpiritFlashAimPreview>();
-            }
-            float angle = GetAimAngle(Vector2.Distance(transform.position, lastAimPosition));
-            aimPreview.Show(transform.position, lastAimPosition, worldCamera, range, angle,
-                obstacleLayers, GetComponent<SpriteRenderer>(), CooldownRemaining <= 0f,
-                Time.time < flashEndTime, ChargeProgress);
+            HideAimPreview();
+            return;
         }
-        else HideAimPreview();
+
+        float target = isPhotoMode ? 1f : 0f;
+        float duration = isPhotoMode ? rangeExpandDuration : rangeRetractDuration;
+        rangeProgress = duration <= 0f ? target : Mathf.MoveTowards(rangeProgress, target, deltaTime / duration);
+        if (rangeProgress <= 0f)
+        {
+            HideAimPreview();
+            return;
+        }
+        if (aimPreview == null)
+        {
+            aimPreview = GetComponent<SpiritFlashAimPreview>();
+            if (aimPreview == null) aimPreview = gameObject.AddComponent<SpiritFlashAimPreview>();
+        }
+
+        var area = GetGroundRange();
+        float aimAngle = Mathf.Lerp(coneAngle, Mathf.Min(coneAngle, farAimAngle),
+            area.GroundDistance(lastAimPosition) / area.Range);
+        aimPreview.ShowGround(area, aimAngle, transform.position, lastAimPosition, worldCamera,
+            obstacleLayers, GetComponent<SpriteRenderer>(), CooldownRemaining <= 0f,
+            Time.time < flashEndTime, ChargeProgress, Mathf.SmoothStep(0f, 1f, rangeProgress), isAiming);
     }
 
     private bool TryGetMouseAimPosition(out Vector2 aimPosition)
@@ -188,6 +215,7 @@ public sealed class SpiritCameraFlash : MonoBehaviour
 
     private void HideAimPreview()
     {
+        rangeProgress = 0f;
         if (aimPreview != null) aimPreview.Hide();
     }
 
@@ -195,6 +223,7 @@ public sealed class SpiritCameraFlash : MonoBehaviour
     {
         isPhotoMode = false;
         SuspendAim();
+        HideAimPreview();
     }
 
     private void SuspendAim()
@@ -203,7 +232,6 @@ public sealed class SpiritCameraFlash : MonoBehaviour
         chargeStartedAt = null;
         flashPending = false;
         if (spirit != null) spirit.SetFlashAim(false, Vector2.zero);
-        HideAimPreview();
     }
 
     private void ReadFlashInput(out bool togglePressed, out bool shootPressed, out bool shootReleased)
@@ -230,10 +258,28 @@ public sealed class SpiritCameraFlash : MonoBehaviour
 #endif
     }
 
-    private float GetAimAngle(float aimDistance)
+    private FlashGroundRange GetGroundRange()
     {
-        float fractionOfRange = Mathf.Clamp01(aimDistance / Mathf.Max(0.1f, range));
-        return Mathf.Lerp(coneAngle, Mathf.Min(coneAngle, farAimAngle), fractionOfRange);
+        Vector2 feet = spirit.player.position;
+        if (playerBody != null && playerBody.isActiveAndEnabled)
+        {
+            Bounds bounds = playerBody.bounds;
+            feet = new Vector2(bounds.center.x, bounds.min.y);
+        }
+        if (floorTiles == null || floorTiles.Length == 0)
+            return new FlashGroundRange(feet, circleDepthScale, range);
+
+        int count = 0;
+        foreach (SpriteRenderer tile in floorTiles)
+        {
+            if (tile == null || !tile.enabled || !tile.gameObject.activeInHierarchy || tile.sprite == null) continue;
+            Bounds b = tile.bounds;
+            if (b.max.x < feet.x - range || b.min.x > feet.x + range) continue;
+            float top = Mathf.Lerp(b.min.y, b.max.y, floorHeightFraction);
+            nearbyFloorRects[count++] = new Vector4(b.min.x, b.min.y, b.max.x, top);
+            if (count == nearbyFloorRects.Length) break;
+        }
+        return new FlashGroundRange(feet, circleDepthScale, range, nearbyFloorRects, count);
     }
 
     // All callers, including UI buttons, must obey mode and cooldown checks.
@@ -242,22 +288,20 @@ public sealed class SpiritCameraFlash : MonoBehaviour
     private int FirePhoto(Vector2 aimPosition, bool fullyCharged)
     {
         if (!CanFlash || Time.time < nextFlashTime) return -1;
-        Vector2 origin = transform.position;
-        Vector2 direction = aimPosition - origin;
-        if (direction.sqrMagnitude < 0.0001f) return -1;
-        float halfAngle = GetAimAngle(direction.magnitude) * 0.5f;
+        Physics2D.SyncTransforms();
+        FlashGroundRange area = GetGroundRange();
         nextFlashTime = Time.time + Mathf.Max(0.1f, cooldown);
         hitTargets.Clear();
         int affectedTargets = 0;
-        Physics2D.SyncTransforms();
-        foreach (Collider2D hit in Physics2D.OverlapCircleAll(origin, range, targetLayers))
+        foreach (Collider2D hit in Physics2D.OverlapCircleAll(area.Origin, area.Range, targetLayers))
         {
             Component target = GetPhotoTarget(hit);
             if (target == null || hitTargets.Contains(target)) continue;
-            Vector2 targetPosition = target.transform.position;
-            Vector2 offset = targetPosition - origin;
-            if (offset.magnitude > range || Vector2.Angle(direction, offset) > halfAngle) continue;
-            if (Physics2D.Linecast(origin, targetPosition, obstacleLayers).collider != null) continue;
+            Collider2D body = target.GetComponent<Collider2D>();
+            Bounds bounds = body != null && body.isActiveAndEnabled ? body.bounds : hit.bounds;
+            Vector2 feet = new Vector2(bounds.center.x, bounds.min.y);
+            if (!area.Contains(feet)) continue;
+            if (Physics2D.Linecast(area.Origin, feet, obstacleLayers).collider != null) continue;
             hitTargets.Add(target);
             InnerWorldMistShield shield = target.GetComponentInParent<InnerWorldMistShield>();
             if (shield != null && shield.IsShielded)
@@ -266,9 +310,9 @@ public sealed class SpiritCameraFlash : MonoBehaviour
                 if (fullyCharged && shield.ReceiveFlash()) affectedTargets++;
                 continue;
             }
-            if (DamagePhotoTarget(target, offset.normalized)) affectedTargets++;
+            if (DamagePhotoTarget(target, (feet - area.Origin).normalized)) affectedTargets++;
         }
-        PlayFlash(direction.normalized);
+        PlayFlash((aimPosition - (Vector2)transform.position).normalized);
         onFlashUsed.Invoke();
         onTargetsFlashed.Invoke(affectedTargets);
         return affectedTargets;
@@ -367,7 +411,7 @@ public sealed class SpiritCameraFlash : MonoBehaviour
     private void LateUpdate()
     {
         CompletePendingFlash();
-        UpdateAimPreview();
+        UpdateAimPreview(Time.deltaTime);
         if (flashRenderer == null || !flashRenderer.enabled) return;
         float remaining = Mathf.Clamp01((flashEndTime - Time.time) / Mathf.Max(0.02f, flashDuration));
         flashRenderer.color = new Color(1f, 1f, 1f, remaining);
@@ -398,5 +442,47 @@ public sealed class SpiritCameraFlash : MonoBehaviour
             if (Application.isPlaying) Destroy(ownedSprite);
             else DestroyImmediate(ownedSprite);
         }
+    }
+}
+
+// The floor projection and the hit test use the same ground-space radius.
+internal readonly struct FlashGroundRange
+{
+    // Match the floor rectangle capacity in SpotlightBeam.shader.
+    public const int MaxFloorRects = 16;
+    public readonly Vector4[] FloorRects;
+    public readonly int FloorRectCount;
+    public readonly Vector2 Origin;
+    public readonly float DepthScale;
+    public readonly float Range;
+
+    public FlashGroundRange(Vector2 origin, float depthScale, float range, Vector4[] floorRects = null, int floorRectCount = 0)
+    {
+        FloorRects = floorRects;
+        FloorRectCount = floorRectCount;
+        Origin = origin;
+        DepthScale = Mathf.Clamp(depthScale, 0.1f, 1f);
+        Range = Mathf.Max(0.1f, range);
+    }
+
+    public Vector2 ProjectOffset(Vector2 offset) => new Vector2(offset.x, offset.y * DepthScale);
+
+    public float GroundDistance(Vector2 point)
+    {
+        Vector2 offset = point - Origin;
+        offset.y /= DepthScale;
+        return offset.magnitude;
+    }
+
+    public bool Contains(Vector2 feet)
+    {
+        if (GroundDistance(feet) > Range) return false;
+        if (FloorRects == null) return true;
+        for (int i = 0; i < FloorRectCount; i++)
+        {
+            Vector4 r = FloorRects[i];
+            if (feet.x >= r.x && feet.x <= r.z && feet.y >= r.y && feet.y <= r.w) return true;
+        }
+        return false;
     }
 }
