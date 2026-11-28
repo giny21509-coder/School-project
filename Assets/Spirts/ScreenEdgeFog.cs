@@ -57,6 +57,15 @@ public sealed class ScreenEdgeFog : MonoBehaviour
         if (Application.IsPlaying(gameObject) && subscribedSpawner == null) BindSpawner();
     }
 
+    /// <summary>章節掛勾：直接指定消霧進度（0：濃霧，1：清晰），例如第六章由空虛值驅動。</summary>
+    public void SetProgress(float progress01)
+    {
+        fromProgress = currentProgress;
+        targetProgress = Mathf.Clamp01(progress01) * finalClearProgress;
+        fadeElapsed = 0f;
+        if (fadeDuration <= 0f) currentProgress = targetProgress;
+    }
+
     public void SetDefeatedCount(int count)
     {
         fromProgress = currentProgress;
